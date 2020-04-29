@@ -61,6 +61,26 @@ class VGG16(nn.Module):
         C4 = self.stage4(C3)
         C5 = self.stage5(C4)
         return C1,C2,C3,C4,C5
+
+class Resnet50(nn.Module):
+    def __init__(self, pretrain=True):
+        super().__init__()        
+        # Torchvisionモデルを使用        
+        basemodel = torchvision.models.resnet50(pretrain)
+        self.stage1 = nn.Sequential(*list(basemodel.children())[0:3])
+        self.stage2 = nn.Sequential(*list(basemodel.children())[3:5])
+        self.stage3 = nn.Sequential(*list(basemodel.children())[5:6])
+        self.stage4 = nn.Sequential(*list(basemodel.children())[6:7])
+        self.stage5 = nn.Sequential(*list(basemodel.children())[7:8])
+
+
+    def forward(self, x):
+        C1 = self.stage1(x)
+        C2 = self.stage2(C1)
+        C3 = self.stage3(C2)
+        C4 = self.stage4(C3)
+        C5 = self.stage5(C4)
+        return C1,C2,C3,C4,C5
     
 # 論文にあるupsampleパスを実装
 # Conv1x1 -> Conv3x3 -> Deconv2x
@@ -86,6 +106,29 @@ class Upsample(nn.Module):
         # アップサンプルパスを出力
         return x
 
+# Upsample with batchnorm
+class Upsample_BN(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv1x1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv3x3 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.deconv = nn.ConvTranspose2d(out_channels, out_channels, kernel_size=4, stride=2, padding=1)
+
+    def forward(self, upsampled, shortcut):
+        # ショートカットした特徴量とアップサンプルされた特徴量を足し合わせる
+        x = torch.cat([upsampled, shortcut], dim=1)
+        x = self.conv1x1(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+        x = self.conv3x3(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        x = self.deconv(x)
+        # アップサンプルパスを出力
+        return x
+    
 # Make U-Net like FCN
 class TextNet(nn.Module):
     def __init__(self, output_channel=7, pretrain=True, backbone="VGG16", original=False):
@@ -95,6 +138,8 @@ class TextNet(nn.Module):
         # 論文通り VGG16のみ実装する
         if backbone == "VGG16":
             self.basemodel = VGG16(pretrain=pretrain, original=original)
+        elif backbone == "resnet50":
+            self.basemodel = Resnet50(pretrain=pretrain)
         else:
             raise NotImplementedError(backbone)
         
@@ -106,17 +151,29 @@ class TextNet(nn.Module):
             base_channels = 16
         else:
             base_channels = 32        
-        
-        # C5の出力のアップサンプルパス
-        self.deconv5 = nn.ConvTranspose2d(512, 512, kernel_size=4, stride=2, padding=1)
-        # C4出力のアップサンプルパス
-        self.merge4 = Upsample(512+base_channels*16, 256)
-        # C3出力のアップサンプルパス
-        self.merge3 = Upsample(256+base_channels*8, 128)
-        # C2出力のアップサンプルパス
-        self.merge2 = Upsample(128+base_channels*4, 64)
-        # C1出力のアップサンプルパス
-        self.merge1 = Upsample(64+base_channels*2, base_channels)
+        if backbone == "VGG16":
+            # C5の出力のアップサンプルパス
+            self.deconv5 = nn.ConvTranspose2d(512, 512, kernel_size=4, stride=2, padding=1)
+            # C4出力のアップサンプルパス
+            self.merge4 = Upsample(512+base_channels*16, 256)
+            # C3出力のアップサンプルパス
+            self.merge3 = Upsample(256+base_channels*8, 128)
+            # C2出力のアップサンプルパス
+            self.merge2 = Upsample(128+base_channels*4, 64)
+            # C1出力のアップサンプルパス
+            self.merge1 = Upsample(64+base_channels*2, base_channels)
+        else:
+            # C5の出力のアップサンプルパス
+            self.deconv5 = nn.ConvTranspose2d(2048, 256, kernel_size=4, stride=2, padding=1)
+            # C4出力のアップサンプルパス
+            self.merge4 = Upsample_BN(256+1024, 512)
+            # C3出力のアップサンプルパス
+            self.merge3 = Upsample_BN(512+512, 256)
+            # C2出力のアップサンプルパス
+            self.merge2 = Upsample_BN(256+256, 64)
+            # C1出力のアップサンプルパス
+            self.merge1 = Upsample_BN(64+64, base_channels)
+            
         # C1出力のアップサンプルおよび出力
         self.predict = nn.Sequential(
                 nn.Conv2d(base_channels, base_channels, kernel_size=3, stride=1, padding=1),

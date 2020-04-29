@@ -8,23 +8,23 @@ config.means = (0.485, 0.456, 0.406)
 config.stds = (0.229, 0.224, 0.225)
 
 config.log_dir = "log"
-config.exp_name = "synthtext"
+config.exp_name = "totaltext"
 config.device = "cuda"
 config.save_dir = "weights"
 
 config.display_freq = 100
 config.viz = True
-config.viz_freq = 1000
+config.viz_freq = 300
 config.vis_dir = "viz"
 
-config.log_freq = 1000
+config.log_freq = 300
 config.save_freq = 1
 
 # dataloader jobs number
 config.num_workers = 0
 
 # batch_size
-config.batch_size = 4
+config.batch_size = 8
 
 # training epoch number
 config.max_epoch = 200

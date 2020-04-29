@@ -176,11 +176,13 @@ class TextDetector(object):
 
         # find disjoint regions
         tcl_mask = fill_hole(tcl_pred)
-        tcl_contours, _ = cv2.findContours(tcl_mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # findContours = img,contours, hier
+        _, tcl_contours, _ = cv2.findContours(tcl_mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         for cont in tcl_contours:
 
             # find an inner point of polygon
+            #print(cont)
             init = self.find_innerpoint(cont)
 
             if init is None:
@@ -233,7 +235,7 @@ class TextDetector(object):
         :param image:
         :return:
         """
-        # get model output
+        # モデルを推論しlogit出力をsoftmax, regression出力はバイパス
         output = self.model(image)
         image = image[0].data.cpu().numpy()
         tr_pred = output[0, 0:2].softmax(dim=0).data.cpu().numpy()
@@ -242,7 +244,7 @@ class TextDetector(object):
         cos_pred = output[0, 5].data.cpu().numpy()
         radii_pred = output[0, 6].data.cpu().numpy()
 
-        # find text contours
+        # OpenCVツールを使い、画像の枠を検出し分離
         contours = self.detect_contours(image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
 
         output = {
@@ -310,7 +312,7 @@ class TextDetector(object):
                 continue
 
             # filter out too small objects
-            conts, _ = cv2.findContours(reconstruct_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            _, conts, _ = cv2.findContours(reconstruct_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             if len(conts) > 1:
                 conts.sort(key=lambda x: cv2.contourArea(x), reverse=True)
             elif not conts:

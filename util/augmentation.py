@@ -89,7 +89,7 @@ class RandomBrightness(object):
 
 
 class Rotate(object):
-    def __init__(self, up=30):
+    def __init__(self, up=20):
         self.up = up
 
     def rotate(self, center, pt, theta):  # 二维图形学的旋转
@@ -313,9 +313,9 @@ class Augmentation(object):
         self.augmentation = Compose([
             # Resize(size),
             Padding(),
-            RandomResizedLimitCrop(size=size, scale=(0.24, 1.69), ratio=(0.33, 3)),
-            RandomBrightness(),
-            RandomContrast(),
+            RandomResizedLimitCrop(size=size, scale=(0.24, 1), ratio=(0.33, 3)),
+            #RandomBrightness(),
+            #RandomContrast(),
             RandomMirror(),
             Rotate(),
             Normalize(mean, std)
