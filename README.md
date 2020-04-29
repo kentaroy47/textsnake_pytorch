@@ -3,8 +3,15 @@ Unofficial implementation of textsnake.
 
 Most of the codes are borrowed from [TextSnake.pytorch by princewang1994](https://github.com/princewang1994/TextSnake.pytorch), which is a great repo.
 
+## Some new features
+* Added resnet50 backbone.
+
+* Added Batchnorm-upsampling blocks for faster convergence.
+
+* Synthtext dataset conversion script.
+
 # What is this repo?
-This repo breaks down the 1) dataset setup, 2) model setup, 3) training setup, 4) evaluation **mostly for code reading purposes.**
+This repo breaks down the 1) dataset setup, 2) model setup, 3) training setup, 4) evaluation/Inference **mostly for code reading purposes.**
 
 I added some comments in Japanese to get some understanding of how TextSnake works.
 
@@ -14,4 +21,4 @@ I added some comments in Japanese to get some understanding of how TextSnake wor
 
 `3. Train Model.ipynb` shows how to train the model using the prepared dataset.
 
-`4. Evaluate Model.ipynb` shows how to visualize and evaluate the TextNet results.
+`4. Inference and Evaluate.ipynb` shows how to visualize and evaluate the TextNet results.
