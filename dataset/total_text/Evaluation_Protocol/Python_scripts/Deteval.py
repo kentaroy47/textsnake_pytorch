@@ -23,7 +23,7 @@ Input format: y0,x0, ..... yn,xn. Each detection is separated by the end of line
 
 input_dir = 'output/{}'.format(args.exp_name)
 gt_dir = 'data/total-text/gt/Test'
-fid_path = 'Python_Pascal_result_last_check.txt'
+fid_path = 'Python_Pascal_result_last_check_{}_{}.txt'.format(args.tr, args.tp)
 
 allInputs = listdir(input_dir)
 

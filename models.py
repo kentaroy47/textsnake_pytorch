@@ -153,26 +153,26 @@ class TextNet(nn.Module):
             base_channels = 32        
         if backbone == "VGG16":
             # C5の出力のアップサンプルパス
-            self.deconv5 = nn.ConvTranspose2d(512, 512, kernel_size=4, stride=2, padding=1)
+            self.deconv5 = nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1)
             # C4出力のアップサンプルパス
-            self.merge4 = Upsample(512+base_channels*16, 256)
+            self.merge4 = Upsample_BN(256+base_channels*16, 256)
             # C3出力のアップサンプルパス
-            self.merge3 = Upsample(256+base_channels*8, 128)
+            self.merge3 = Upsample_BN(256+base_channels*8, 128)
             # C2出力のアップサンプルパス
-            self.merge2 = Upsample(128+base_channels*4, 64)
+            self.merge2 = Upsample_BN(128+base_channels*4, 64)
             # C1出力のアップサンプルパス
-            self.merge1 = Upsample(64+base_channels*2, base_channels)
+            self.merge1 = Upsample_BN(64+base_channels*2, base_channels)
         else:
             # C5の出力のアップサンプルパス
             self.deconv5 = nn.ConvTranspose2d(2048, 256, kernel_size=4, stride=2, padding=1)
             # C4出力のアップサンプルパス
-            self.merge4 = Upsample_BN(256+1024, 512)
+            self.merge4 = Upsample_BN(256+1024, 256)
             # C3出力のアップサンプルパス
-            self.merge3 = Upsample_BN(512+512, 256)
+            self.merge3 = Upsample_BN(256+512, 128)
             # C2出力のアップサンプルパス
-            self.merge2 = Upsample_BN(256+256, 64)
+            self.merge2 = Upsample_BN(128+256, 32)
             # C1出力のアップサンプルパス
-            self.merge1 = Upsample_BN(64+64, base_channels)
+            self.merge1 = Upsample_BN(32+64, base_channels)
             
         # C1出力のアップサンプルおよび出力
         self.predict = nn.Sequential(

@@ -22,3 +22,11 @@ I added some comments in Japanese to get some understanding of how TextSnake wor
 `3. Train Model.ipynb` shows how to train the model using the prepared dataset.
 
 `4. Inference and Evaluate.ipynb` shows how to visualize and evaluate the TextNet results.
+
+## Results
+resnet50 
+`Precision = 0.7379 - Recall = 0.6681 - Fscore = 0.7012`
+
+vgg16
+
+vgg16 original
