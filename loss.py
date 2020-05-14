@@ -2,10 +2,39 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+def focal_loss(pred, gt, alpha=3):
+  ''' 
+    alpha: FocalLoss論文のアルファパラメータ。
+    alpha = 1の時はCEと同様のロス。
+    alpha = 2で論文の値。データ中に物体が少ないため、3がよさそう。
+  '''
+  pred = pred.unsqueeze(1).float()
+  gt = gt.unsqueeze(1).float()
+
+  pos_inds = gt.eq(1).float()
+  neg_inds = gt.lt(1).float()
+  neg_weights = torch.pow(1 - gt, 4)
+
+  loss = 0
+
+  pos_loss = torch.log(pred + 1e-12) * torch.pow(1 - pred, alpha) * pos_inds
+  neg_loss = torch.log(1 - pred + 1e-12) * torch.pow(pred, alpha) * neg_weights * neg_inds
+
+  num_pos  = pos_inds.float().sum()
+  pos_loss = pos_loss.sum()
+  neg_loss = neg_loss.sum()
+
+  if num_pos == 0:
+    loss = loss - neg_loss
+  else:
+    loss = loss - (pos_loss + neg_loss) / num_pos
+  return loss
+
 class TextLoss(nn.Module):
 
-    def __init__(self):
+    def __init__(self, focal=False):
         super().__init__()
+        self.focal = focal
     
     # Online hard negative miningの実装
     # Positive vs negativeが1:3になるよう、最も確信度の低い上位negative結果のみロス計算に回す。
@@ -66,15 +95,23 @@ class TextLoss(nn.Module):
         cos_map = cos_map.contiguous().view(-1)
 
         # Online hard miningによってnegative-positiveのバランスを取り、trロスを導出
-        loss_tr = self.ohem(tr_pred, tr_mask.long(), train_mask.long())
+        if not focal:
+            loss_tr = self.ohem(tr_pred, tr_mask.long(), train_mask.long())
+        else:
+            # Focal loss
+            tr_train_mask = train_mask * tr_mask
+            loss_tr = focal_loss(tr_pred, tr_train_mask.long())
 
         loss_tcl = 0.
         # TCLや他Lregはtr_mask*train_maskでマスクしロスを計算する。
         tr_train_mask = train_mask * tr_mask
-        
-        # もし物体が含まれるならmaskした部分のみでロス計算。普通のCE。
+       
         if tr_train_mask.sum().item() > 0:
-            loss_tcl = F.cross_entropy(tcl_pred[tr_train_mask], tcl_mask[tr_train_mask].long())
+            if not focal:
+                # もし物体が含まれるならmaskした部分のみでロス計算。普通のCE。
+                loss_tcl = F.cross_entropy(tcl_pred[tr_train_mask], tcl_mask[tr_train_mask].long())
+            else:
+                loss_tcl = focal_loss(tcl_pred[tr_train_mask], tcl_mask[tr_train_mask].long())
 
         # geometry losses
         # マスクした部分でSmooth L1 lossを計算。
