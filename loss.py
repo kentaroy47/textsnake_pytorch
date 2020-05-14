@@ -95,7 +95,7 @@ class TextLoss(nn.Module):
         cos_map = cos_map.contiguous().view(-1)
 
         # Online hard miningによってnegative-positiveのバランスを取り、trロスを導出
-        if not focal:
+        if not self.focal:
             loss_tr = self.ohem(tr_pred, tr_mask.long(), train_mask.long())
         else:
             # Focal loss
@@ -107,7 +107,7 @@ class TextLoss(nn.Module):
         tr_train_mask = train_mask * tr_mask
        
         if tr_train_mask.sum().item() > 0:
-            if not focal:
+            if not self.focal:
                 # もし物体が含まれるならmaskした部分のみでロス計算。普通のCE。
                 loss_tcl = F.cross_entropy(tcl_pred[tr_train_mask], tcl_mask[tr_train_mask].long())
             else:
